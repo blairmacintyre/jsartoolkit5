@@ -7,6 +7,8 @@ EMSCRIPTEN_BINDINGS(constant_bindings) {
 	function("setup", &setup);
 	function("teardown", &teardown);
 
+	function("createSimpleCamera", &createSimpleCamera);
+	
 	function("_addMarker", &addMarker);
 	function("_addMultiMarker", &addMultiMarker);
 
