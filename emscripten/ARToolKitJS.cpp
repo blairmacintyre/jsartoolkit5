@@ -138,6 +138,19 @@ extern "C" {
 		return cameraID;
 	}
 
+    int createSimpleCamera(int xsize, int ysize, ARdouble FOVy) {
+		ARParam param;
+		if (arParamClearWithFOVy(&param, xsize, ysize, FOVy) < 0) {
+			ARLOGe("createSimpleCamera(): Error creating simple camera.\n");
+			return -1;
+		}
+
+		int cameraID = gCameraID++;
+		cameraParams[cameraID] = param;
+
+		return cameraID;
+	}
+
 	int setCamera(int id, int cameraID) {
 		if (arControllers.find(id) == arControllers.end()) { return -1; }
 		arController *arc = &(arControllers[id]);
@@ -613,7 +626,7 @@ extern "C" {
 		if (arControllers.find(id) == arControllers.end()) { return ARCONTROLLER_NOT_FOUND; }
 		arController *arc = &(arControllers[id]);
 
-		return arDetectMarker( arc->arhandle, arc->videoFrame );
+		return arDetectMarker( arc->arhandle, (AR2VideoBufferT*)arc->videoFrame );
 	}
 
 	int getMarkerNum(int id) {

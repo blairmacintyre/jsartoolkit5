@@ -1216,7 +1216,7 @@
 				onSuccess : function(ARController, ARCameraParam),
 				onError : function(error),
 
-				cameraParam: url, // URL to camera parameters definition file.
+				cameraParam: url || fovy, // URL to camera parameters definition file, of fovy for simple camera spec.
 				maxARVideoSize: number, // Maximum max(width, height) for the AR processing canvas.
 
 				width : number | {min: number, ideal: number, max: number},
@@ -1241,20 +1241,21 @@
 			obj[i] = configuration[i];
 		}
 		var onSuccess = configuration.onSuccess;
-		var cameraParamURL = configuration.cameraParam;
+		var cameraParam = configuration.cameraParam;
 
-		obj.onSuccess = function() {
-			new ARCameraParam(cameraParamURL, function() {
-				var arCameraParam = this;
-				var maxSize = configuration.maxARVideoSize || Math.max(video.videoWidth, video.videoHeight);
-				var f = maxSize / Math.max(video.videoWidth, video.videoHeight);
-				var w = f * video.videoWidth;
-				var h = f * video.videoHeight;
-				if (video.videoWidth < video.videoHeight) {
-					var tmp = w;
-					w = h;
-					h = tmp;
-				}
+		obj.onSuccess = function(video) {
+			var maxSize = configuration.maxARVideoSize || Math.max(video.videoWidth, video.videoHeight);
+			var f = maxSize / Math.max(video.videoWidth, video.videoHeight);
+			var w = f * video.videoWidth;
+			var h = f * video.videoHeight;
+			if (video.videoWidth < video.videoHeight) {
+				var tmp = w;
+				w = h;
+				h = tmp;
+			}
+
+			var arCameraParam;
+			var onLoad = function () {
 				var arController = new ARController(w, h, arCameraParam);
 				arController.image = video;
 				if (video.videoWidth < video.videoHeight) {
@@ -1267,15 +1268,29 @@
 					arController.videoHeight = video.videoHeight;
 				}
 				onSuccess(arController, arCameraParam);
-			}, function(err) {
-				console.error("ARController: Failed to load ARCameraParam", err);
-			});
+			};
+
+
+			if (typeof cameraParam == 'number') {
+				arCameraParam = new ARSimpleCameraParam(w, h, cameraParam);
+				onLoad();
+			} else {
+				new ARCameraParam(cameraParam,	function() {
+					arCameraParam = this;
+					onLoad();
+				}, function(err) {
+					console.error("ARController: Failed to load ARCameraParam", err);
+				});
+			}
 		};
 
-		var video = this.getUserMedia(obj);
-		return video;
+		var retVideo = this.getUserMedia(obj);
+		return retVideo;
 	};
 
+	var ARSimpleCameraParam = function(width, height, fov) {
+		this.id = artoolkit.createSimpleCamera(width, height, fov);
+	};
 
 	/** 
 		ARCameraParam is used for loading AR camera parameters for use with ARController.
@@ -1372,6 +1387,8 @@
 	var FUNCTIONS = [
 		'setup',
 		'teardown',
+
+		'createSimpleCamera',
 
 		'setLogLevel',
 		'getLogLevel',
